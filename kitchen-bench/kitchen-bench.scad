@@ -2,28 +2,30 @@ $fn = 50;
 
 debug = false;
 show_supports = true;
-show_barlina = true;
-show_top = true;
-show_cushion = true;
+show_top = false;
+show_cushion = false;
 
 
 depth = 330;
 
 cabinet_stone_top_thickness = 30;
-cabinet_plywood_top_thickness = 12;
-cabinet_height = 897 - cabinet_stone_top_thickness - cabinet_plywood_top_thickness;
+cabinet_plywood_top_thickness = 18;
+cabinet_height = 897 - cabinet_stone_top_thickness - cabinet_plywood_top_thickness; // 897 - 30 - 18 = 849
 cabinet_width = 660;
 cabinet_overhang = 20;
 
-bench_cushion_height = 40;
-bench_top_thickness = 18;
-bench_height = 450 - bench_cushion_height - bench_top_thickness;
+// bench_cushion_height = 40;
+bench_top_thickness = 27;
+bench_height = 450 - bench_top_thickness; // 423
 bench_width = 1600;
 bench_overhang = 50;
+bench_top_corner_radius = 15;
 
-plywood_thickness = 12;
+plywood_thickness = 18;
 stud_thickness = 45;
-
+module stud(length = 100) {
+  Cube(stud_thickness, length, stud_thickness);
+}
 //
 
 Cabinet();
@@ -38,33 +40,35 @@ module Cabinet() {
     %Cube(depth, cabinet_width, cabinet_height);
   }
 
-  if (show_barlina) {
-    // bärlina bak
-    translate([0, plywood_thickness, cabinet_height - stud_thickness])
-    45x45(cabinet_width - 2*plywood_thickness);
-  }
-
   if (show_supports) {
+    // Regel bak
+    translate([0, plywood_thickness, cabinet_height - stud_thickness])
+    stud(cabinet_width - 2*plywood_thickness);
+
+    // Regel bak nere
+    translate([0, 0, 0])
+    stud(bench_width);
+
     // Regel fram uppe
     translate([depth - stud_thickness, 0, cabinet_height - stud_thickness])
-    45x45(cabinet_width);
+    stud(cabinet_width);
 
-    // "bärlina" fram nere
+    // Regel fram nere
     translate([depth - stud_thickness, 0, 0])
-    45x45(cabinet_width);
+    stud(cabinet_width);
 
     // Väggar
     Cube(depth, plywood_thickness, cabinet_height);
 
     translate([0, cabinet_width - plywood_thickness, 0])
     Cube(depth, plywood_thickness, cabinet_height);
-
-    // playwood top
-    translate([0, 0, cabinet_height])
-    Cube(depth, cabinet_width, cabinet_plywood_top_thickness);
   }
 
   if (show_top) {
+    // plywood top
+    translate([0, 0, cabinet_height])
+    Cube(depth, cabinet_width, cabinet_plywood_top_thickness);
+
     // Sten Bänkskiva
     color("#000000")
     translate([0, 0, cabinet_height])
@@ -87,14 +91,15 @@ module Cabinet() {
 module Bench() {
   // Bänk
   translate([0, cabinet_width, 0]) {
-    if (debug)
-    color("#80000085")
-    %Cube(depth, bench_width, bench_height);
+    if (debug) {
+      color("#80000085")
+      %Cube(depth, bench_width, bench_height);
+    }
 
     if (show_top) {
       // skiva
       translate([0, 0, bench_height])
-      Cube(depth + bench_overhang, bench_width, bench_top_thickness);
+      RoundedFrontCube(depth + bench_overhang, bench_width, bench_top_thickness, bench_top_corner_radius);
     }
 
     if (show_cushion) {
@@ -102,45 +107,53 @@ module Bench() {
       Cube(depth + bench_overhang - 10, bench_width - 10, bench_cushion_height, "#bca895");
     }
 
-    if (show_barlina) {
-      // bärlina bak
-      translate([0,0, bench_height - stud_thickness])
-      45x45(bench_width);
-    }
 
     if (show_supports) {
+      // Regel bak
+      translate([0,0, bench_height - stud_thickness])
+      stud(bench_width);
+
+      // Regel bak nere
+      translate([0, 0, 0])
+      stud(bench_width);
+
       // Regel fram uppe
       translate([depth - stud_thickness, 0, bench_height - stud_thickness])
-      45x45(bench_width);
+      stud(bench_width);
 
       // Regel fram nere
       translate([depth - stud_thickness, 0, 0])
-      45x45(bench_width);
-
+      stud(bench_width);
 
       // legs
-      translate([stud_thickness, 0, 0])
-      Cube(depth-stud_thickness, plywood_thickness, bench_height);
+      Cube(depth, plywood_thickness, bench_height);
 
-      translate([stud_thickness, bench_width/2 - plywood_thickness/2, 0])
-      Cube(depth-stud_thickness, plywood_thickness, bench_height);
+      translate([0, bench_width/2 - plywood_thickness/2, 0])
+      Cube(depth, plywood_thickness, bench_height);
 
-      translate([stud_thickness, bench_width/2 + plywood_thickness/2, 0])
-      Cube(depth-stud_thickness, plywood_thickness, bench_height);
+      translate([0, bench_width/2 + plywood_thickness/2, 0])
+      Cube(depth, plywood_thickness, bench_height);
 
-      translate([stud_thickness, bench_width - plywood_thickness, 0])
-      Cube(depth-stud_thickness, plywood_thickness, bench_height);
+      translate([0, bench_width - plywood_thickness, 0])
+      Cube(depth, plywood_thickness, bench_height);
     }
   }
 }
 
-module 45x45(length = 100) {
-  Cube(stud_thickness, length, stud_thickness);
-}
 
 module Cube(width, length, height, color = "#bab09e") {
   color(color)
   cube([width, length, height]);
+}
+
+module RoundedFrontCube(width, length, height, r = 10, color = "#bab09e") {
+  color(color)
+  linear_extrude(height)
+  hull() {
+    square([width - r, length]);
+    translate([width - r, r]) circle(r);
+    translate([width - r, length - r]) circle(r);
+  }
 }
 
 module Rotate(rotation = [0, 0, 0], originOffset = [0, 0, 0], debug = false) {
