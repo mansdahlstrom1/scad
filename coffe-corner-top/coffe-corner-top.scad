@@ -45,6 +45,7 @@ FL_y = back_y - sqrt(pow(left_side,2) - pow(FL_x,2));  // ≈ 1.3
 
 print_mode = false;
 piece      = 1;
+dxf_mode   = false;  // true = export flat 2D outline for stone cutters (save as .dxf)
 
 top_thickness = print_mode ? 1.88 : 30;  // 1.88 = 0.20 first layer + 6 × 0.28mm
 
@@ -165,8 +166,16 @@ module make_piece(col, row) {
 }
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
+// dxf_mode: set true, then export with:
+//   openscad -o coffe-corner-top.dxf coffe-corner-top.scad
 
-if (print_mode) {
+if (dxf_mode) {
+
+  // 2D outline only — export as DXF for stone cutters
+  // Use: openscad -o coffe-corner-top.dxf coffe-corner-top.scad
+  top_2d();
+
+} else if (print_mode) {
 
   // Single flat piece ready to slice and print
   col = ((piece - 1) % 4) + 1;
