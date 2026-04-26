@@ -11,7 +11,7 @@ diag_bl_fr = 713;       // back-left  → front-right
 diag_fl_br = 733;       // front-left → back-right
 
 overhang_right = 20;
-overhang_front = 20;
+overhang_front = 35;
 
 // ── Analytically derived corner positions ─────────────────────────────────────
 // Solved from side lengths + diagonals via circle intersections.
