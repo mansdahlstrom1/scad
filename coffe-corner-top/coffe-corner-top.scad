@@ -5,6 +5,7 @@ back_width     = 639;   // back wall: BL → BR
 right_side     = 330;   // right wall: BR → FR
 left_side      = 329;   // left wall:  FL → BL
 cabinet_height = 870;
+ceiling_height = 2400;
 
 // Cross-diagonal measurements — fully define the shape together with the sides
 diag_bl_fr = 713;       // back-left  → front-right
@@ -201,7 +202,7 @@ if (dxf_mode) {
       make_piece(c, r);
 
   // Wall visualization (ghost — not exported)
-  wall_h  = cabinet_height + top_thickness + 50;
+  wall_h  = ceiling_height;
   wall_t  = 15;
   wall_hl = 400;
 

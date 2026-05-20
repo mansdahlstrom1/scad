@@ -36,6 +36,22 @@ The right side leans ~7 mm inward over 330 mm (not perpendicular). The back wall
 
 Front width computes to ~648 mm (measured ~650 mm — within tape tolerance).
 
+## Slab dimensions (final piece incl. overhangs)
+
+| Sida            | DXF    | Verklighet (plastutskrift) | Stenhuggare |
+|-----------------|--------|----------------------------|-------------|
+| Bakkant         | 659 mm | 656 mm                     | 658 mm      |
+| Framkant        | 668 mm | 667 mm                     | 670 mm      |
+| Höger           | 365 mm | 364 mm                     | 350 mm ⚠️   |
+| Vänster         | 364 mm | 364 mm                     | —           |
+| Diag BL→FR      | 747 mm | 743 mm                     | —           |
+| Diag BR→FL      | 767 mm | 764 mm                     | —           |
+
+Hörnvinklar (från DXF): BL=92.6°, BR=88.9°, FR=91.0°, FL=87.6°
+Stenhuggarens ritning: 93°, 89°, 91°, 87° (avrundade — OK).
+
+Plastutskriften är det mest tillförlitliga referensmåttet då den provats på plats.
+
 ## Files
 
 | File | Purpose |
