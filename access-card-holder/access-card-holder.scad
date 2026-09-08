@@ -38,10 +38,11 @@
 // flat with nothing worse than a 2 mm lip overhang, and glue together.
 // V1 was two pieces for the same reason.
 //
-// part: "front" | "back" | "holder" | "test_key" | "test_tag"
+// part: "both" (the two halves, laid out side by side — the default)
+//       | "front" | "back" | "holder" | "test_key" | "test_tag"
 // ============================================================
 
-part = "holder";
+part = "both";
 $fn  = 64;
 
 /* ---------- Access card (CR80) ---------- */
@@ -352,6 +353,10 @@ module coupon(y0, y1) {
 
 if (part == "front")         front_piece();
 else if (part == "back")     back_piece();
+else if (part == "holder")   holder();
 else if (part == "test_key") coupon(-1, key_y1 + 4);
 else if (part == "test_tag") coupon(tag_y0 - 5, tag_y1 + 5);
-else                         holder();
+else {
+    front_piece();
+    translate([outer_w + 8, 0, 0]) back_piece();
+}
