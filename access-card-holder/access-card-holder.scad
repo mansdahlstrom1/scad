@@ -30,7 +30,15 @@
 // Tag and shell numbers were measured off the V1 meshes
 // (cardholder(1).stl, cardholder-tag-insert-thick.stl).
 //
-// part: "holder" | "test_key" | "test_tag"
+// Printing: as one piece, the roof of the card slot is a 54 mm bridge.
+// It cannot usefully be supported — the slot is a 1.4 mm cavity, too
+// shallow for support to stand up in, and the strips behind the front
+// plate can only be cleared blind. So the model also splits at the
+// card-slot plane into "front" + "back". Both halves then print dead
+// flat with nothing worse than a 2 mm lip overhang, and glue together.
+// V1 was two pieces for the same reason.
+//
+// part: "front" | "back" | "holder" | "test_key" | "test_tag"
 // ============================================================
 
 part = "holder";
@@ -49,7 +57,8 @@ tag_t      = 2.8;
 tag_r_tip  = 12.5;   // narrow-end radius, back-calculated from V1
 tag_clr    = 0.25;
 tag_z_clr  = 0.2;
-tag_skin   = 0.8;    // wall behind the tag
+tag_lip_w  = 2.0;    // how far the back lip reaches in over the tag
+tag_lip_t  = 1.2;    // back lip thickness
 tag_frame_w = 2.5;   // material around the tag island
 tag_sideways = true; // long axis across the badge width, as V1
 
@@ -96,10 +105,18 @@ thumb_r    = 6.0;
 
 key_tag_gap = 3.0;
 
+/* ---------- Two-piece split, at the card-slot plane ---------- */
+// The front half carries an outer lip that the back half nests into, so
+// the two self-align and the seam is hidden. Glue on the flat land
+// inside the lip.
+split_lip_w = 0.8;
+split_lip_h = 1.2;
+split_clr   = 0.15;
+
 /* ---------- Derived: z ---------- */
 ins_front = face_t + card_ch;                 // back of the card groove
 plain_bz  = ins_front + base_t;               // thin back plate
-tag_bz    = ins_front + tag_t + tag_z_clr + tag_skin;
+tag_bz    = ins_front + tag_t + tag_z_clr + tag_lip_t;
 key_front = ins_front;                        // the key's front face
 // back of the shallow guide channel below the key: it has to stay in
 // front of the blade so the blade can swing past it
@@ -209,6 +226,24 @@ key_profile = [
 // The holder
 // ============================================================
 
+// window, thumb notch and lanyard slot — everything cut through the
+// face plate, shared by the one-piece body and the front half
+module face_cuts() {
+    // window: shows the card, and is how the tag and key go in
+    translate([0, (window_y0 + window_y1) / 2, -1])
+        linear_extrude(face_t + 2)
+            rrect(window_w, window_y1 - window_y0, window_r);
+
+    // thumb notch, for pushing the card back up
+    translate([0, card_y1 - thumb_r - 2, -1])
+        linear_extrude(face_t + 2) circle(r = thumb_r);
+
+    // lanyard slot
+    translate([0, outer_h - lanyard_from_top, -1])
+        linear_extrude(plain_bz + 2)
+            rrect(lanyard_w, lanyard_h, lanyard_h / 2);
+}
+
 module holder() {
     union() {
         difference() {
@@ -234,19 +269,7 @@ module holder() {
             // card groove — card slides down from the top edge
             box(card_cw, card_y0, outer_h + 1, face_t, ins_front);
 
-            // window: shows the card, and is how the tag and key go in
-            translate([0, (window_y0 + window_y1) / 2, -1])
-                linear_extrude(face_t + 2)
-                    rrect(window_w, window_y1 - window_y0, window_r);
-
-            // thumb notch, for pushing the card back up
-            translate([0, card_y1 - thumb_r - 2, -1])
-                linear_extrude(face_t + 2) circle(r = thumb_r);
-
-            // lanyard slot
-            translate([0, outer_h - lanyard_from_top, -1])
-                linear_extrude(plain_bz + 2)
-                    rrect(lanyard_w, lanyard_h, lanyard_h / 2);
+            face_cuts();
 
             // key pocket — opens forward, ramped to match the key's
             // wedge, sitting on the ledge at key_y0
@@ -257,13 +280,20 @@ module holder() {
                 [key_y1, ins_front - 1]
             ], key_pw);
 
-            // open the key's back, leaving a lip down each side and
-            // across the top
-            box(key_pw - 2 * key_lip_w, key_y0, key_y1 - key_lip_w, key_front, 40);
+            // open the key's back, leaving a lip down each side. No lip
+            // across the top: the card, the ledge and the side lips
+            // already hold the key, and it would bridge the full width.
+            box(key_pw - 2 * key_lip_w, key_y0, key_y1, key_front, 40);
 
             // tag pocket — opening forward, card sits flush on the tag
             translate([0, 0, ins_front - 1])
                 linear_extrude(tag_t + tag_z_clr + 1) tag_pocket2d();
+
+            // open the tag's back too, leaving a lip all round. Saves
+            // material, lets you push the tag out, and leaves a 2 mm
+            // overhang here instead of a 31 mm bridge.
+            translate([0, 0, ins_front + tag_t + tag_z_clr])
+                linear_extrude(40) offset(r = -tag_lip_w) tag_pocket2d();
         }
 
         if (tag_peg)
@@ -276,6 +306,43 @@ module holder() {
 // Output
 // ============================================================
 
+// ---- the two printable halves ----
+
+// outer lip on the front half; interrupted where the card slides in.
+// Extruded with an overlap so it merges into the wall instead of
+// butting onto it, which would leave coincident faces.
+module split_lip(h) {
+    linear_extrude(h)
+        difference() {
+            difference() { outline2d(); offset(r = -split_lip_w) outline2d(); }
+            translate([-card_cw / 2, card_y0]) square([card_cw, outer_h]);
+        }
+}
+
+module front_piece() {
+    difference() {
+        union() {
+            linear_extrude(ins_front) outline2d();
+            translate([0, 0, ins_front - 0.6]) split_lip(split_lip_h + 0.6);
+        }
+        // card groove, run out past the top so it leaves no coplanar face
+        box(card_cw, card_y0, outer_h + 1, face_t, ins_front + 2);
+        face_cuts();
+    }
+}
+
+// sits on the bed on its split face, pockets opening downward
+module back_piece() {
+    translate([0, 0, -ins_front])
+        intersection() {
+            holder();
+            translate([-outer_w, -1, ins_front])
+                cube([2 * outer_w, outer_h + 2, 60]);
+            translate([0, 0, ins_front - 1]) linear_extrude(60)
+                offset(r = -(split_lip_w + split_clr)) outline2d();
+        }
+}
+
 module coupon(y0, y1) {
     intersection() {
         holder();
@@ -283,6 +350,8 @@ module coupon(y0, y1) {
     }
 }
 
-if (part == "test_key")      coupon(-1, key_y1 + 4);
+if (part == "front")         front_piece();
+else if (part == "back")     back_piece();
+else if (part == "test_key") coupon(-1, key_y1 + 4);
 else if (part == "test_tag") coupon(tag_y0 - 5, tag_y1 + 5);
 else                         holder();

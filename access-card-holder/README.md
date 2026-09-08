@@ -16,8 +16,8 @@ and shell numbers were measured off those V1 meshes rather than guessed.
    and is what locks them in — nothing can come forward past it.
 4. Thread the reel strap through the top slot.
 
-To get the key or tag back out, pull the card first. The key's back is
-open so you can push it out with a finger.
+To get the key or tag back out, pull the card first. Both pockets are
+open at the back, so you can push either one out with a finger.
 
 The key's hinge sits 2 mm above the bottom edge. Everything within reach
 of the blade's swing — the ledge and the guide walls — sits in *front* of
@@ -49,50 +49,67 @@ carried it — upright it would not leave room for the key.
 
 ## Printing
 
-**Front face down, no supports, no rotation** — the STL is already
-exported in the print orientation, so it drops straight into the slicer.
+Print it as **two halves and glue them** — `access-card-holder-front.stl`
+and `access-card-holder-back.stl`. Both are already exported in their
+print orientation, so they drop straight into the slicer. **No supports,
+on either half.**
 
-Nothing on the part needs support, but three surfaces bridge:
+The one-piece `access-card-holder.stl` is still there and is
+geometrically identical when assembled, but it is much harder to print:
 
-| Height | What bridges | Span |
+| | Unsupported area | Worst span |
 |---|---|---|
-| 2.6 mm | roof of the card slot | **54 mm** |
-| 5.6 mm | back of the tag pocket | 31 mm |
-| 7.8–10.4 mm | key box steps, key back lips | 2–4 mm |
+| One piece | 3542 mm² | **54 mm** — the roof of the card slot |
+| Front half | **0 mm²** | none at all |
+| Back half | 375 mm² | 2 mm lip overhangs only |
 
-The 54 mm one is the only one worth caring about, and it sags *into the
-card slot*. The slot is 1.4 mm for a 0.76 mm card, so there is 0.64 mm of
-sag budget — but it is worth helping it along:
+That 54 mm bridge is the roof of the card slot, and it cannot usefully be
+supported. The slot is a 1.4 mm cavity — too shallow for support to stand
+up in, so it prints as a floppy sheet that welds to the roof rather than
+holding it — and the 3 mm strips behind the front plate could only be
+cleared blind along 98 mm. Splitting removes the bridge instead of
+propping it up. V1 was two pieces for the same reason.
 
-- part cooling **100 %** over the bridge layers
-- bridge speed **~25 mm/s**, bridge flow **~95 %**
-- layer height **0.2 mm** (0.16 mm gives a nicer front face)
+### Assembly
+
+The front half carries a 0.8 mm lip around its outer edge; the back half
+is inset 0.95 mm so it drops inside that lip with 0.15 mm of slack. It
+self-aligns — no clamping jig needed. Glue on the flat land inside the
+lip (~1.5 mm wide, all the way round). The lip is interrupted across the
+top edge, which is where the card slides in.
+
+Assembled thickness is 11.76 mm, the same as the one-piece — the back
+half's first 1.2 mm sits down inside the lip.
+
+### Settings
+
+- **no supports** — turn off auto-generation if your slicer offers it
+- layer height 0.2 mm (0.16 mm gives a nicer front face)
 - 3 perimeters, 25–30 % infill
-- **5 mm brim** — bed contact is a thin 5.6 mm ring around the window and
-  the corners can lift without one
+- **5 mm brim on the front half** — its bed contact is only a ~5.6 mm ring
+  around the window, and on Smooth PEI it wants glue stick too
 
-The front face prints against the bed, so it takes the build plate's
-finish. On a textured PEI sheet that gives a nice matte badge front; use a
-smooth sheet if you want it glossy.
+The front face prints against the bed, so it takes the plate's finish —
+Smooth PEI gives a glossy badge front.
 
 ```bash
 # from the repo root (scad/)
-/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD \
-  -o access-card-holder/access-card-holder.stl \
-  access-card-holder/access-card-holder.scad
+OS=/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD
+D=access-card-holder
+$OS --export-format binstl -o $D/access-card-holder-front.stl -D 'part="front"' $D/access-card-holder.scad
+$OS --export-format binstl -o $D/access-card-holder-back.stl  -D 'part="back"'  $D/access-card-holder.scad
 ```
 
 ### Test coupons — print these first
 
 `test-key.stl` is the bottom 44 mm, `test-tag.stl` is the tag pocket. Both
 are ~10 minute prints and check the two fits that matter before you commit
-to the full part. `test-key.stl` also includes a stretch of the card-slot
-bridge, so it doubles as a check that your bridging settings are right.
+to the full part. Note they are cut from the one-piece body, so they do
+include the bridge; print them mainly for fit, not for surface quality.
 
 ```bash
-OS=/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD
-$OS -o access-card-holder/test-key.stl -D 'part="test_key"' access-card-holder/access-card-holder.scad
-$OS -o access-card-holder/test-tag.stl -D 'part="test_tag"' access-card-holder/access-card-holder.scad
+$OS -o $D/test-key.stl -D 'part="test_key"' $D/access-card-holder.scad
+$OS -o $D/test-tag.stl -D 'part="test_tag"' $D/access-card-holder.scad
 ```
 
 ## Still to confirm
