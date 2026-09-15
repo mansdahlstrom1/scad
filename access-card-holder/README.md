@@ -31,10 +31,11 @@ bottom of the badge.
 
 | | V2 | V1 |
 |---|---|---|
-| Outer | 59.4 × 100.0 mm | 58 × 100 |
+| Outer | 59.4 × 103.0 mm | 58 × 100 |
 | Thickness, most of the badge | 4.0 mm | 4 |
 | Thickness, over the tag | 6.6 mm | — |
-| Thickness, over the key | 11.8 mm | — |
+| Thickness, over the key | 11.9 mm | — |
+| Bottom rim below the key | 5 mm tall × 5 mm thick | — |
 | Window | 48.25 × 80 mm | 74 × 42 |
 | Border beside the window | 5.6 mm | 8 |
 | Lanyard slot | 14 × 4 mm | ~14 × 4 |

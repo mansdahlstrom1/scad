@@ -104,7 +104,11 @@ face_t     = 1.4;
 card_ch    = 1.4;    // card groove depth
 base_t     = 1.2;    // thin back plate
 side_wall  = 2.5;
-bottom_rim = 2.0;
+// The bottom rim is the strip below the key pocket. At 2 mm it was a thin
+// bar across the full width and it was the brittle part. It sits in FRONT
+// of the blade's plane, so unlike the depth it can grow freely; the badge
+// just gets that much taller.
+bottom_rim = 5.0;
 corner_r   = 5.0;
 tab_h      = 12.0;
 
