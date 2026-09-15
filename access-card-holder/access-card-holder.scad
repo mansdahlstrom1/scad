@@ -63,24 +63,36 @@ tag_lip_t  = 1.2;    // back lip thickness
 tag_frame_w = 2.5;   // material around the tag island
 tag_sideways = true; // long axis across the badge width, as V1
 
-// V1 had a peg through the tag's hole. The teardrop pocket already
-// locates the tag and a forward-facing peg prints unsupported, so off.
-tag_peg         = false;
+// V1 had a peg through the tag's hole. Split in two, the back half prints
+// with its pockets opening toward the bed, so the peg now builds up from
+// the build plate instead of hanging unsupported.
+tag_peg         = true;
 tag_peg_d       = 3.4;
 tag_peg_frm_tip = 4.95;
 
 /* ---------- Drawer key, folded ---------- */
-key_w       = 23.0;
-key_h       = 40.0;
+// Measured off photos of the real key: body is ~23.6 x 40.4 mm, against a
+// 23.5 x 40.25 pocket. Marginal in both directions, hence "hard to fit".
+key_w       = 23.5;
+key_h       = 41.0;
 key_t_hinge = 8.0;   // thickness at the hinge (bottom) end
 key_t_far   = 5.0;   // thickness at the far (top) end
-key_clr     = 0.25;
+key_clr     = 0.4;
 key_frame_w = 2.0;   // material around the key frame
 key_lip_w   = 2.0;   // how far the back lip reaches in over the key
 key_lip_t   = 1.2;   // back lip thickness
 
 // The hinge sits on the badge's bottom edge, so the folded blade hangs
 // below the badge rather than being tucked inside it.
+// The key has an oblong slot through its top end. A post through it locks
+// the key against sliding, lifting and rotating; the card stops it lifting
+// off. Sized DELIBERATELY SMALL against a measured 14.8 x 3.8 mm slot,
+// because the measurement is photo-derived and only good to ~0.5 mm — an
+// undersized post still locates, an oversized one will not go in at all.
+key_slot_l        = 13.5;
+key_slot_w        = 3.0;
+key_slot_from_top = 3.5;   // slot centre, down from the key's top edge
+
 blade_w     = 10.0;  // blade width          (TODO confirm)
 blade_z0    = 2.6;   // blade front face, back from the key's front face
 blade_clr   = 0.4;
@@ -104,7 +116,20 @@ window_clr = 1.5;    // slack so the tag can be dropped straight in
 window_r   = 3.0;
 thumb_r    = 6.0;
 
-key_tag_gap = 3.0;
+key_tag_gap = 2.0;   // tightened to buy room for the ID window
+
+/* ---------- Card ID window (point 4) ---------- */
+// The ID is printed on the back of the card, top left, 7 characters. These
+// are PLACEHOLDERS — the card was not to hand. Everything is anchored to the
+// card, not the badge. id_side is which side of the card the measurement was
+// taken from, as seen looking at the BACK of the badge; flip it if mirrored.
+id_window         = true;
+id_w              = 24.0;
+id_h              = 6.0;
+id_r              = 1.5;
+id_from_card_top  = 1.5;   // card's top edge -> window's top edge
+id_from_card_side = 3.0;   // card's side edge -> window's outer edge
+id_side           = "left";
 
 /* ---------- Two-piece split, at the card-slot plane ---------- */
 // The front half carries an outer lip that the back half nests into, so
@@ -157,6 +182,21 @@ window_y0 = card_y0 + 2;
 window_y1 = card_y1 - 4;
 
 // key back face inside the badge, as a function of height
+// post through the key's slot, and where the key's back has to stay closed
+// so the post stands on floor instead of floating
+key_post_y   = key_y1 - key_slot_from_top;
+key_open_y1  = key_post_y - key_slot_w / 2 - 1.5;
+
+// ID window, positioned off the card
+card_top_y = card_y0 + card_l;
+id_y = card_top_y - id_from_card_top - id_h / 2;
+id_x = (id_side == "left" ? -1 : 1) * (card_w / 2 - id_from_card_side - id_w / 2);
+
+// Only ~8 mm of clear plate between the tag island and the card's top edge,
+// so the window has nowhere else to go. Fail loudly rather than in the print.
+assert(!id_window || id_y - id_h / 2 > tag_y1 + tag_frame_w + 0.4,
+       "ID window overlaps the tag island - raise it, shrink id_h, or drop key_tag_gap");
+
 function key_depth(y) =
     key_t_hinge + (key_t_far - key_t_hinge) * (y - key_y0) / key_h;
 function key_bz(y) = key_front + key_depth(y) + key_clr + key_lip_t;
@@ -190,6 +230,23 @@ module tag_pocket2d() {
     else
         translate([0, tag_y0])
             teardrop2d(tag_pl, tag_w / 2 + tag_clr, tag_r_tip + tag_clr);
+}
+
+// Back opening for the tag. Stopped short of the peg: the opening removes
+// the very floor the peg stands on, and its other end opens into the card
+// groove, so without this the peg renders as a detached floating cylinder.
+module tag_back_open2d() {
+    keep = tag_peg_d / 2 + 3;
+    if (tag_peg)
+        intersection() {
+            offset(r = -tag_lip_w) tag_pocket2d();
+            if (tag_sideways)
+                translate([peg_pos[0] + keep, tag_cy - 100]) square([200, 200]);
+            else
+                translate([-100, peg_pos[1] + keep]) square([200, 200]);
+        }
+    else
+        offset(r = -tag_lip_w) tag_pocket2d();
 }
 
 peg_pos = tag_sideways
@@ -258,6 +315,16 @@ module holder() {
                 translate([0, 0, ins_front])
                     linear_extrude(tag_bz - ins_front)
                         offset(r = tag_frame_w) tag_pocket2d();
+                // Bottom band, full width. The blade-clearance region used
+                // to be only as wide as the key box, leaving a bare 1.2 mm
+                // plate either side of it - that was the brittle edge. This
+                // adds nothing behind guide_z, so the blade still clears.
+                intersection() {
+                    translate([0, 0, ins_front])
+                        linear_extrude(guide_z - ins_front) outline2d();
+                    translate([-outer_w, -1, ins_front])
+                        cube([2 * outer_w, key_fy0 + 1, 40]);
+                }
                 // raised frame around the key only
                 intersection() {
                     linear_extrude(40)
@@ -281,10 +348,19 @@ module holder() {
                 [key_y1, ins_front - 1]
             ], key_pw);
 
-            // open the key's back, leaving a lip down each side. No lip
-            // across the top: the card, the ledge and the side lips
-            // already hold the key, and it would bridge the full width.
-            box(key_pw - 2 * key_lip_w, key_y0, key_y1, key_front, 40);
+            // Open the key's back, leaving a lip down each side. It stops
+            // below the post so the top of the pocket keeps its floor for
+            // the post to stand on - that retained band is also the "block"
+            // that holds the key. The post supports it mid-span, so it
+            // bridges ~5 mm a side rather than the full pocket width.
+            box(key_pw - 2 * key_lip_w, key_y0, key_open_y1, key_front, 40);
+
+            // card ID window, so the ID on the card's back can be read
+            // without pulling the card. Cut from inside the card groove
+            // backward, so the front half is untouched.
+            if (id_window)
+                translate([id_x, id_y, ins_front - 1])
+                    linear_extrude(40) rrect(id_w, id_h, id_r);
 
             // tag pocket — opening forward, card sits flush on the tag
             translate([0, 0, ins_front - 1])
@@ -294,8 +370,14 @@ module holder() {
             // material, lets you push the tag out, and leaves a 2 mm
             // overhang here instead of a 31 mm bridge.
             translate([0, 0, ins_front + tag_t + tag_z_clr])
-                linear_extrude(40) offset(r = -tag_lip_w) tag_pocket2d();
+                linear_extrude(40) tag_back_open2d();
         }
+
+        // post through the key's slot. Spans the full pocket depth, so in
+        // the back half it builds from the bed up into the retained floor.
+        translate([0, key_post_y, ins_front])
+            linear_extrude(key_depth(key_post_y) + key_clr)
+                rrect(key_slot_l, key_slot_w, key_slot_w / 2);
 
         if (tag_peg)
             translate([peg_pos[0], peg_pos[1], ins_front])

@@ -9,9 +9,12 @@ and shell numbers were measured off those V1 meshes rather than guessed.
 
 ## How it goes together
 
-1. Drop the **door tag** into the teardrop pocket, face down.
+1. Drop the **door tag** into the teardrop pocket, face down. A **3.4 mm peg**
+   goes through the tag's own hole, so it cannot rotate or shift.
 2. Drop the **key** into the key pocket, bottom edge first under the front
-   border, then swing the top in. It sits on a ledge at the bottom.
+   border, then swing the top in. It sits on a ledge at the bottom, and a
+   **post passes through the key's own slot** at the top — that locks it
+   against sliding, lifting and rotating.
 3. Slide the **access card** down the front slot. It covers both pockets
    and is what locks them in — nothing can come forward past it.
 4. Thread the reel strap through the top slot.
@@ -42,7 +45,11 @@ bottom of the badge.
 |---|---|---|
 | Access card | CR80, 85.6 × 54 × 0.76 mm | standard |
 | Door tag | teardrop 30.75 × 46.25 × 2.8 mm | measured from the V1 tag insert |
-| Drawer key, folded | 23 × 40 mm, 8 mm at the hinge tapering to 5 mm | measured by hand |
+| Drawer key, folded | ≈23.6 × 40.4 mm, 8 mm at the hinge tapering to 5 mm | measured off photos |
+| Key slot (for the post) | ≈14.8 × 3.8 mm, 3.5 mm down from the key's top | measured off photos |
+
+The key pocket is 24.3 × 41.4 mm. V2's was 23.5 × 40.25 against a ≈23.6 × 40.4
+key — marginal in **both** directions, which is why it was so hard to fit.
 
 The tag lies **sideways** (long axis across the badge), the same way V1
 carried it — upright it would not leave room for the key.
@@ -61,7 +68,11 @@ geometrically identical when assembled, but it is much harder to print:
 |---|---|---|
 | One piece | 3542 mm² | **54 mm** — the roof of the card slot |
 | Front half | **0 mm²** | none at all |
-| Back half | 375 mm² | 2 mm lip overhangs only |
+| Back half | 594 mm² | 24 mm, inside the key pocket |
+
+(The back half's figure rose from 375 mm² in V2 when the peg and post gained
+their retained floor. Every span is short and internal — nothing like the
+54 mm bridge that forced the split in the first place.)
 
 That 54 mm bridge is the roof of the card slot, and it cannot usefully be
 supported. The slot is a 1.4 mm cavity — too shallow for support to stand
@@ -112,13 +123,34 @@ $OS -o $D/test-key.stl -D 'part="test_key"' $D/access-card-holder.scad
 $OS -o $D/test-tag.stl -D 'part="test_tag"' $D/access-card-holder.scad
 ```
 
+## Placeholders to dial in
+
+The **card ID window** is positioned from parameters, not from a measurement —
+the card wasn't to hand. All that is known is *top left, 7 characters*. Adjust
+`id_w`, `id_h`, `id_from_card_top`, `id_from_card_side` and `id_side`
+(`"left"`/`"right"`, as seen looking at the badge's **back** — flip it if it
+comes out mirrored). Set `id_window = false` to remove it.
+
+There is only ~8 mm of clear plate between the tag island and the card's top
+edge, so the window has nowhere else to go. An `assert()` fails the render if
+your numbers push it into the tag island, rather than letting you find out
+after an hour of printing.
+
 ## Still to confirm
 
 `blade_w` (10 mm) and `blade_z0` (2.6 mm — how far back the blade sits
-from the key's front face) are estimates. They set how much clearance the
-blade's swing gets. `test-key.stl` exists to check them: put the key in
-and flip the blade all the way out. If it catches, raise `blade_z0` or
-`blade_clear` and reprint the coupon.
+from the key's front face) are still estimates. They set how much clearance
+the blade's swing gets, and `blade_z0` also caps how thick the bottom edge
+can ever be: the edge is thin *only* to stay in front of the blade.
+
+The bottom edge was widened to full width in V3 (1.2 mm → 2.2 mm either side
+of the key box), which needed no measurement and cannot foul the blade. Going
+thicker than 2.2 mm means raising `guide_z`, which needs `blade_z0` measured
+off the real key — an edge-on photo of the 23 mm end would settle it.
+
+Key body and slot dimensions are photo-derived, ±0.5 mm. The post is
+deliberately undersized at 13.5 × 3.0 mm against a measured 14.8 × 3.8 mm
+slot; with calipers it could be tightened.
 
 `tag_peg` is off. V1 had a 3.4 mm peg through the tag's hole, but the
 teardrop pocket already locates the tag and a forward-facing peg would
