@@ -1,5 +1,10 @@
-.claude/
+.claude/*
+!.claude/skills/
 .DS_Store
 *~
 *.3mf
 *.cxprj
+
+# build output
+00000.log
+*.log
