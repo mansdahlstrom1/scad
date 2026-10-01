@@ -67,6 +67,19 @@ already selected when it opens.
 The CLI **succeeds silently and fails inconsistently** — the script checks the
 artifact exists rather than trusting the exit code. Trust the same signal.
 
+**Check the temperatures the script reports.** The CLI does not resolve a
+profile's `inherits` chain; it reads the leaf file and fills the rest from its
+own defaults. `prepare-print.sh` flattens the chain itself and prints what it
+resolved:
+
+```
+   flattened PolyTerra PLA @System: 4 profiles, nozzle 220C, bed 55C, Polymaker
+```
+
+A nozzle of **200 C** or a vendor of **(Undefined)** means the flattening did
+not happen and the project would print cold. Do not hand it over — the `.3mf`
+carries the numbers, so a wrong value there is what actually gets printed.
+
 ## 4. Report, then hand over
 
 Slice once to gather numbers (to a temp dir, not the project folder) and report:

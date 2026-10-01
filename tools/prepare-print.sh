@@ -18,6 +18,7 @@ SYS="$HOME/Library/Application Support/OrcaSlicer/system/Creality"
 NOZZLE="0.4"
 PROCESS="Standard"     # Fine 0.12 | Optimal 0.16 | Standard 0.20 | Draft 0.24
 FILAMENT="PolyTerra"   # the spool normally loaded
+BED="Textured PEI Plate"   # what the KE actually ships with
 OUTDIR=""          # defaults to the input file's own folder
 declare -a SCAD_DEFS=()
 
@@ -31,6 +32,7 @@ while [[ $# -gt 0 ]]; do
     --process)  PROCESS="$2"; shift 2 ;;
     --filament) FILAMENT="$2"; shift 2 ;;
     --nozzle)   NOZZLE="$2"; shift 2 ;;
+    --bed)      BED="$2"; shift 2 ;;
     --outdir)   OUTDIR="$2"; shift 2 ;;
     -D)         SCAD_DEFS+=(-D "$2"); shift 2 ;;
     -h|--help)  usage 0 ;;
@@ -88,15 +90,35 @@ else
   cp "$INPUT" "$STL"
 fi
 
+# The CLI does not walk a profile's `inherits` chain. It reads the leaf file
+# and silently falls back to its own compiled-in defaults for every key the
+# leaf omits - PolyTerra sliced at 200C instead of 220C, and the KE process
+# lost `exclude_object`. Resolve all three chains before handing them over.
+FLAT_DIR="$(mktemp -d -t orcaflat)"
+trap 'rm -rf "$FLAT_DIR"' EXIT
+FLATTEN="$(dirname "$0")/flatten-profile.py"
+
+"$FLATTEN" "$MACHINE"       -o "$FLAT_DIR/machine.json"
+# Plate type is a project setting the GUI holds, so the CLI defaults it to
+# "Cool Plate" and heats the bed to 35C. The KE ships a textured PEI sheet.
+"$FLATTEN" "$PROCESS_JSON"  -o "$FLAT_DIR/process.json"  --report \
+           --set "curr_bed_type=$BED"
+"$FLATTEN" "$FILAMENT_JSON" -o "$FLAT_DIR/filament.json" --report
+
 echo "==> building project  (${NOZZLE}mm nozzle · $PROCESS · $(basename "${FILAMENT_JSON%.json}"))"
 "$ORCA" \
-  --load-settings "$MACHINE;$PROCESS_JSON" \
-  --load-filaments "$FILAMENT_JSON" \
+  --load-settings "$FLAT_DIR/machine.json;$FLAT_DIR/process.json" \
+  --load-filaments "$FLAT_DIR/filament.json" \
   --export-3mf "$PROJECT" \
   "$STL" >/dev/null 2>&1 || true
 
 # The CLI reports success unreliably; trust the artifact, not the exit code.
 [[ -f "$PROJECT" ]] || { echo "FAILED: no project written" >&2; exit 1; }
+
+# --export-3mf writes project-scope keys from its own defaults, discarding what
+# was loaded, so the plate has to be set again after the fact.
+"$(dirname "$0")/patch-3mf.py" "$PROJECT" --report \
+  --set "curr_bed_type=$BED" --set "exclude_object=1"
 
 echo "==> $PROJECT  ($(du -h "$PROJECT" | cut -f1))"
 echo
